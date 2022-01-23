@@ -1,0 +1,733 @@
+Option Explicit
+
+Sub Recalculate()
+
+'Procedure to Consolidate all sheets in a workbook
+
+On Error GoTo IfError
+
+'1. Variables declaration
+Dim Sht As Worksheet, DstSht As Worksheet
+Dim LstRow As Long, LstCol As Long, DstRow As Long
+Dim i As Integer, EnRange As String
+Dim SrcRng As Range
+
+'2. Disable Screen Updating - stop screen flickering
+'   And Disable Events to avoid inturupted dialogs / popups
+With Application
+    .ScreenUpdating = False
+    .EnableEvents = False
+End With
+
+'3. Delete the Consolidate_Data WorkSheet if it exists
+Application.DisplayAlerts = False
+On Error Resume Next
+
+ActiveWorkbook.Sheets("Consolidate_Data").Delete
+Application.DisplayAlerts = True
+
+'4. Add a new WorkSheet and name as 'Consolidate_Data'
+With ActiveWorkbook
+    Set DstSht = .Sheets.Add(After:=.Sheets(.Sheets.Count))
+    DstSht.Name = "Consolidate_Data"
+End With
+
+'5. Loop through each WorkSheet in the workbook and copy the data to the 'Consolidate_Data' WorkSheet
+For Each Sht In ActiveWorkbook.Worksheets
+    If Sht.Name <> "Buford Setup" And Sht.Name <> "Wright Setup" And Sht.Name <> "WKT's" And Sht.Name <> "DataFile" Then  'DstSht.Name Then
+       '5.1: Find the last row on the 'Consolidate_Data' sheet
+       DstRow = fn_LastRow(DstSht) + 1
+               
+       '5.2: Find Input data range
+       'speciy data range I want her?
+       LstRow = fn_LastRow(Sht)
+       'specify column range I want here?
+       LstCol = fn_LastColumn(Sht)
+       
+       EnRange = Sht.Cells(LstRow, LstCol).Address
+       Set SrcRng = Sht.Range("A1:" & EnRange)
+       
+       '5.3: Check whether there are enough rows in the 'Consolidate_Data' Worksheet
+        If DstRow + SrcRng.Rows.Count > DstSht.Rows.Count Then
+            MsgBox "There are not enough rows to place the data in the Consolidate_Data worksheet."
+            GoTo IfError
+        End If
+                
+      '5.4: Copy data to the 'consolidated_data' WorkSheet starting at Column A
+        SrcRng.Copy Destination:=DstSht.Range("A" & DstRow) 'Vendor Cell X4
+        'SrcRng.Copy Destination:=DstSht.Range("B" & DstRow) 'Week Ending Date Cell K4
+        'SrcRng.Copy Destination:=DstSht.Range("C" & DstRow) 'Date Range E8:X8 **Need code to obtain acutal date and not day
+        'SrcRng.Copy Destination:=DstSht.Range("D" & DstRow) 'Crew # Cell D4
+        'SrcRng.Copy Destination:=DstSht.Range("E" & DstRow) 'Time Sheet Cell W2
+        'SrcRng.Copy Destination:=DstSht.Range("F" & DstRow) 'WR/IO Range E9:X9
+        'SrcRng.Copy Destination:=DstSht.Range("G" & DstRow) 'Lun Code Ranges Labor B13:B22, Equip B26:B31, Activ B36:B45
+        'SrcRng.Copy Destination:=DstSht.Range("H" & DstRow) 'QTY HRS Ranges Labor , Equip , Activ
+        'SrcRng.Copy Destination:=DstSht.Range("I" & DstRow) 'PO Type Range E10:X10
+        'SrcRng.Copy Destination:=DstSht.Range("J" & DstRow) 'Employee Code Range C13:C22
+        'SrcRng.Copy Destination:=DstSht.Range("J" & DstRow) 'Production Range E11:X11
+        'SrcRng.Copy Destination:=DstSht.Range("L" & DstRow) 'PO# Not On Time Sheet
+        'SrcRng.Copy Destination:=DstSht.Range("M" & DstRow) 'SMID Not on Time Sheet
+                
+    End If
+
+Next
+
+IfError:
+
+'6. Enable Screen Updating and Events
+    With Application
+        .ScreenUpdating = True
+        .EnableEvents = True
+    End With
+
+'Dim i As Long
+
+    'Dim xRg As Range
+
+    'On Error Resume Next
+
+    'Worksheets.Add Sheets(1)
+
+    'ActiveSheet.Name = "DataFile"
+
+    'For i = 2 To Sheets.Count
+
+        'Set xRg = Sheets(1).UsedRange
+
+        'If i > 2 Then
+
+            'Set xRg = Sheets(1).Cells(xRg.Rows.Count + 1, 1)
+
+        'End If
+
+        'Sheets(i).Activate
+
+        'ActiveSheet.UsedRange.Copy xRg
+
+    'Next
+    
+End Sub
+
+'In this example we are finding the last Row of specified Sheet
+Function fn_LastRow(ByVal Sht As Worksheet)
+
+    Dim LastRow As Long
+    Dim lRow As Long
+    LastRow = Sht.Cells.SpecialCells(xlLastCell).Row
+    lRow = Sht.Cells.SpecialCells(xlLastCell).Row
+    Do While Application.CountA(Sht.Rows(lRow)) = 0 And lRow <> 1
+        lRow = lRow - 1
+    Loop
+    fn_LastRow = lRow
+
+End Function
+
+'In this example we are finding the last column of specified Sheet
+Function fn_LastColumn(ByVal Sht As Worksheet)
+
+    Dim lastCol As Long
+    Dim lCol As Long
+    lastCol = Sht.Cells.SpecialCells(xlLastCell).Column
+    lCol = Sht.Cells.SpecialCells(xlLastCell).Column
+    Do While Application.CountA(Sht.Columns(lCol)) = 0 And lCol <> 1
+        lCol = lCol - 1
+    Loopx
+
+End Function
+
+'Button To Pull in Data from other sheets
+Sub TargetBook()
+    Dim lr As Long
+    Dim lrTarget As Long
+    
+    'Vendor
+    Sheets("FW01").Select 'Goes to FW01 tab first to make sure code is being run from the correct tab, so here put in for each sheet then run code to itterate through each tab.
+    'lr = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row using Find method
+    Range("Y4").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 1).Select 'cellsinworksheet(row(this is the last row +1),col)
+    'ActiveSheet.Paste ;paste everything in the active sheet
+    'Will paste everything selected as a value,
+    'note transpose option as true will transpose the data Selected
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Week Ending Date
+    Sheets("FW01").Select
+    Range("L4").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 2).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Date/Day
+    Sheets("FW01").Select
+    Range("F8").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 3).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'Crew Number
+    Sheets("FW01").Select
+    Range("E4").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 4).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+      
+     'Time Sheet Number
+    Sheets("FW01").Select
+    Range("X2").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 5).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'PO Type
+    Sheets("FW01").Select
+    Range("F10").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 9).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'WR/IO
+    Sheets("FW01").Select
+    Range("F9").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 6).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Production
+    Sheets("FW01").Select
+    Range("F11").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 11).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Lun Code
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B28:B33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("B39:B48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Qty/Hrs
+    Sheets("FW01").Select
+    Range("F14:F23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("G14:G23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("F28:F33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("F39:F48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Employee ID/EquipTag
+     Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("D28:D33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Dim rCell As Range
+    Dim rRng As Range
+    Dim myCell As Range
+
+    Set rRng = Sheets("FW01").Range("F39:F48")
+
+    For Each rCell In rRng.Cells
+        If Not IsEmpty(rCell) Then
+        'Debug.Print rCell.Address, rCell.Value open debug window with ctrl+G
+        Sheets("TargetBook").Select
+        lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+        Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+        Selection.Value = "0"
+        End If
+    Next rCell
+
+    'Grab and Fill down contant cells
+    
+    Dim LastA As Long, LastB As Long, LastC As Long, LastD As Long, LastE As Long, LastF As Long, LastG As Long, LastH As Long, LastI As Long, LastJ As Long, LastK As Long, LastL As Long, LastM As Long
+
+    Sheets("TargetBook").Select
+    LastA = Range("A" & Rows.Count).End(xlUp).Row
+    LastB = Range("B" & Rows.Count).End(xlUp).Row
+    LastC = Range("C" & Rows.Count).End(xlUp).Row
+    LastD = Range("D" & Rows.Count).End(xlUp).Row
+    LastE = Range("E" & Rows.Count).End(xlUp).Row
+    LastF = Range("F" & Rows.Count).End(xlUp).Row
+    LastH = Range("H" & Rows.Count).End(xlUp).Row
+    LastI = Range("I" & Rows.Count).End(xlUp).Row
+    LastK = Range("K" & Rows.Count).End(xlUp).Row
+    LastL = Range("L" & Rows.Count).End(xlUp).Row
+    LastM = Range("M" & Rows.Count).End(xlUp).Row
+    Range("A" & LastA, "A" & LastH).filldown
+    Range("B" & LastB, "B" & LastH).filldown
+    Range("C" & LastC, "C" & LastH).filldown
+    Range("D" & LastD, "D" & LastH).filldown
+    Range("E" & LastE, "E" & LastH).filldown
+    Range("F" & LastF, "F" & LastH).filldown
+    Range("I" & LastI, "I" & LastH).filldown
+    Range("K" & LastK, "K" & LastH).filldown
+    Range("L" & LastL, "L" & LastH).filldown
+    Range("M" & LastM, "M" & LastH).filldown
+'---------------------------------------------------------------------------------------------------------------------------------
+    
+      
+    'Date/Day
+    Sheets("FW01").Select
+    Range("H8").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 3).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'PO Type
+    Sheets("FW01").Select
+    Range("H10").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 9).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'WR/IO
+    Sheets("FW01").Select
+    Range("H9").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 6).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Production
+    Sheets("FW01").Select
+    Range("H11").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 11).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Lun Code
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B28:B33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("B39:B48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Qty/Hrs
+    Sheets("FW01").Select
+    Range("H14:H23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("I14:I23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("H28:H33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("H39:H48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Employee ID/EquipTag
+     Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("D28:D33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    Set rRng = Sheets("FW01").Range("H39:H48")
+
+    For Each rCell In rRng.Cells
+        If Not IsEmpty(rCell) Then
+        'Debug.Print rCell.Address, rCell.Value open debug window with ctrl+G
+        Sheets("TargetBook").Select
+        lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+        Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+        Selection.Value = "0"
+        End If
+    Next rCell
+
+    Sheets("TargetBook").Select
+    LastA = Range("A" & Rows.Count).End(xlUp).Row
+    LastB = Range("B" & Rows.Count).End(xlUp).Row
+    LastC = Range("C" & Rows.Count).End(xlUp).Row
+    LastD = Range("D" & Rows.Count).End(xlUp).Row
+    LastE = Range("E" & Rows.Count).End(xlUp).Row
+    LastF = Range("F" & Rows.Count).End(xlUp).Row
+    LastH = Range("H" & Rows.Count).End(xlUp).Row
+    LastI = Range("I" & Rows.Count).End(xlUp).Row
+    LastK = Range("K" & Rows.Count).End(xlUp).Row
+    LastL = Range("L" & Rows.Count).End(xlUp).Row
+    LastM = Range("M" & Rows.Count).End(xlUp).Row
+    Range("A" & LastA, "A" & LastH).filldown
+    Range("B" & LastB, "B" & LastH).filldown
+    Range("C" & LastC, "C" & LastH).filldown
+    Range("D" & LastD, "D" & LastH).filldown
+    Range("E" & LastE, "E" & LastH).filldown
+    Range("F" & LastF, "F" & LastH).filldown
+    Range("I" & LastI, "I" & LastH).filldown
+    Range("K" & LastK, "K" & LastH).filldown
+    Range("L" & LastL, "L" & LastH).filldown
+    Range("M" & LastM, "M" & LastH).filldown
+'-----------------------------------------------------------------------------------------------------------------------------------
+    'Date/Day
+    Sheets("FW01").Select
+    Range("J8").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 3).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'PO Type
+    Sheets("FW01").Select
+    Range("J10").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 9).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    'WR/IO
+    Sheets("FW01").Select
+    Range("J9").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 6).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Production
+    Sheets("FW01").Select
+    Range("J11").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 11).Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Lun Code
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 0, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B14:B23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("B28:B33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("B39:B48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(lrTarget + 1, 7).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    'Qty/Hrs
+    Sheets("FW01").Select
+    Range("J14:J23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("K14:K23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("J28:J33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("J39:J48").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 8).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 8).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    'Employee ID/EquipTag
+     Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 0, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+        
+    Sheets("FW01").Select
+    Range("D14:D23").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    
+    Sheets("FW01").Select
+    Range("D28:D33").Copy
+    Sheets("TargetBook").Select
+    lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+    Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+    'Cells(lrTarget + 1, 10).Select 'cellsinworksheet(row(this is the last row +1),col)
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+
+    Set rRng = Sheets("FW01").Range("J39:J48")
+
+    For Each rCell In rRng.Cells
+        If Not IsEmpty(rCell) Then
+        'Debug.Print rCell.Address, rCell.Value open debug window with ctrl+G
+        Sheets("TargetBook").Select
+        lrTarget = Cells.Find("*", Cells(1, 1), xlFormulas, xlPart, xlByRows, xlPrevious, False).Row 'checks for last row to add data to on the sheet.
+        Cells(Rows.Count, 10).End(xlUp).Offset(1, 0).Select
+        Selection.Value = "0"
+        End If
+    Next rCell
+
+    Sheets("TargetBook").Select
+    LastA = Range("A" & Rows.Count).End(xlUp).Row
+    LastB = Range("B" & Rows.Count).End(xlUp).Row
+    LastC = Range("C" & Rows.Count).End(xlUp).Row
+    LastD = Range("D" & Rows.Count).End(xlUp).Row
+    LastE = Range("E" & Rows.Count).End(xlUp).Row
+    LastF = Range("F" & Rows.Count).End(xlUp).Row
+    LastH = Range("H" & Rows.Count).End(xlUp).Row
+    LastI = Range("I" & Rows.Count).End(xlUp).Row
+    LastK = Range("K" & Rows.Count).End(xlUp).Row
+    LastL = Range("L" & Rows.Count).End(xlUp).Row
+    LastM = Range("M" & Rows.Count).End(xlUp).Row
+    Range("A" & LastA, "A" & LastH).filldown
+    Range("B" & LastB, "B" & LastH).filldown
+    Range("C" & LastC, "C" & LastH).filldown
+    Range("D" & LastD, "D" & LastH).filldown
+    Range("E" & LastE, "E" & LastH).filldown
+    Range("F" & LastF, "F" & LastH).filldown
+    Range("I" & LastI, "I" & LastH).filldown
+    Range("K" & LastK, "K" & LastH).filldown
+    Range("L" & LastL, "L" & LastH).filldown
+    Range("M" & LastM, "M" & LastH).filldown
+'-----------------------------------------------------------------------------------------------------------------------------------
+    
+    Columns("A:M").AutoFit 'autofit columns
+    Cells(1, 1).Select 'at the end of copy over data the selected cell will go back to A1/Home
+    
+End Sub
+
+Sub Transpose() 'F8 allows you to step through the code and see this working.
+Dim og As Worksheet
+Dim ns As Worksheet
+Dim count_col As Integer
+Dim count_row As Integer
+Dim i As Long
+Dim j As Long
+
+Set og = ThisWorkbook.Sheets(1)
+Set ns = ThisWorkbook.Sheets(2)
+
+og.Activate 'activate raw data sheet
+'Sheets("FW01").Select
+
+count_col = WorksheetFunction.CountA(Range("A1", Range("A1").End(xlToRight))) 'counting columns
+count_row = WorksheetFunction.CountA(Range("A1", Range("A1").End(xlDown))) 'counting rows
+
+For i = 1 To count_col 'i up and down
+    For j = 1 To count_row 'j left to right
+    
+    ns.Cells(i, j) = og.Cells(j, i).Text 'will give transposed data from rows to col
+    
+    Next j
+Next i
+
+ns.Activate
+
+End Sub
